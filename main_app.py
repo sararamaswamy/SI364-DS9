@@ -4,6 +4,7 @@
 # Many:Many relationship: Artists:Songs
 # TODO: E-R diagram to display
 # TODO: relationship to build (done, ish)
+
 # TODO: relationship and association table to build
 
 import os
@@ -33,6 +34,12 @@ manager = Manager(app)
 # moment = Moment(app) # For time # Later
 db = SQLAlchemy(app) # For database use
 
+migrate = Migrate(app, db) # For database use/updating
+manager.add_command('db', MigrateCommand) # Add migrate command to manager
+def make_shell_context():
+    return dict(app=app, db=db, Album=Album, Artist=Artist, Song=Song)
+
+manager.add_command("shell", Shell(make_context=make_shell_context))
 
 #########
 ######### Everything above this line is important/useful setup, not problem-solving.
@@ -49,6 +56,7 @@ class Album(db.Model):
     name = db.Column(db.String(64))
     artists = db.relationship('Artist',secondary=collections,backref=db.backref('albums',lazy='dynamic'),lazy='dynamic')
     songs = db.relationship('Song',backref='Album')
+    producers = db.Column(db.String(64))
 
 
 class Artist(db.Model):
@@ -66,6 +74,7 @@ class Song(db.Model):
     album_id = db.Column(db.Integer, db.ForeignKey("albums.id"))
     artist_id = db.Column(db.Integer, db.ForeignKey("artists.id"))
     genre = db.Column(db.String(64))
+    rating = db.Column(db.Float)
 
     def __repr__(self):
         return "{}, genre : {}".format(self.title, self.genre)
@@ -110,14 +119,14 @@ def get_or_create_album(db_session, album_name, artists_list=[]):
         db_session.commit()
     return album
 
-def get_or_create_song(db_session, song_title, song_artist, song_album, song_genre):
+def get_or_create_song(db_session, song_title, song_artist, song_album, song_genre, song_rating):
     song = db_session.query(Song).filter_by(title=song_title).first()
     if song:
         return song
     else:
         artist = get_or_create_artist(db_session, song_artist)
         album = get_or_create_album(db_session, song_album, artists_list=[song_artist]) # list of one song artist each time -- check out get_or_create_album and get_or_create_artist!
-        song = Song(title=song_title,genre=song_genre,artist_id=artist.id)
+        song = Song(title=song_title,genre=song_genre,artist_id=artist.id, rating = song_rating)
         db_session.add(song)
         db_session.commit()
         return song
