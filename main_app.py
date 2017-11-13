@@ -68,7 +68,7 @@ class Song(db.Model):
     genre = db.Column(db.String(64))
 
     def __repr__(self):
-        return "{} by {} | {}".format(self.title,self.artist, self.genre)
+        return "{} by {} | {}".format(self.title, self.genre)
 
 
 
